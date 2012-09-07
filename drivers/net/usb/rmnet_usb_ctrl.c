@@ -337,7 +337,6 @@ int rmnet_usb_ctrl_start_rx(struct rmnet_ctrl_dev *dev)
 
 	return retval;
 }
-
 static int rmnet_usb_ctrl_alloc_rx(struct rmnet_ctrl_dev *dev)
 {
 	int	retval = -ENOMEM;
