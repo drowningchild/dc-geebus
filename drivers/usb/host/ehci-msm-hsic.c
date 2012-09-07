@@ -38,7 +38,6 @@
 #include <linux/kthread.h>
 #include <linux/wait.h>
 #include <linux/pm_qos.h>
-#include <linux/irq.h>
 
 #include <mach/msm_bus.h>
 #include <mach/clk.h>
@@ -97,8 +96,6 @@ struct msm_hsic_hcd {
 	struct completion	rt_completion;
 	int			resume_status;
 	int			resume_again;
-	int			bus_reset;
-	int			reset_again;
 
 	struct pm_qos_request pm_qos_req_dma;
 };
@@ -1820,9 +1817,12 @@ static int __devexit ehci_hsic_msm_remove(struct platform_device *pdev)
 	struct msm_hsic_hcd *mehci = hcd_to_hsic(hcd);
 	struct msm_hsic_host_platform_data *pdata = mehci->dev->platform_data;
 
+<<<<<<< HEAD
 	/* Remove the HCD prior to releasing our resources. */
 	usb_remove_hcd(hcd);
 
+=======
+>>>>>>> e06c77e... msm: hsic: Disallow processor idle sleep while driving resume signal
 	if (pdata && pdata->swfi_latency)
 		pm_qos_remove_request(&mehci->pm_qos_req_dma);
 
