@@ -28,5 +28,16 @@ config MSM_QDSS_ETM_DEFAULT_ENABLE
 	  Otherwise, tracing is disabled by default but can be enabled via
 	  sysfs.
 
-	  For production builds, you should probably say 'N' here to avoid
-	  potential power, performance and memory penalty.
+	  If unsure, say 'N' here to avoid potential power and performance
+	  penalty.
+
+endif
+
+config CORESIGHT_EVENT
+	tristate "CoreSight Event driver"
+	help
+	  This driver provides support for registering with various events
+	  and performing CoreSight actions like aborting trace on their
+	  occurrence.
+
+endif
