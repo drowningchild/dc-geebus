@@ -75,7 +75,7 @@
  *****************************************************************************/
 
 #define DMA_ADDR_INVALID	(~(dma_addr_t)0)
-#define USB_MAX_TIMEOUT		100 /* 100msec timeout */
+#define ATDTW_SET_DELAY		100 /* 100msec delay */
 #define EP_PRIME_CHECK_DELAY	(jiffies + msecs_to_jiffies(1000))
 #define MAX_PRIME_CHECK_RETRY	3 /*Wait for 3sec for EP prime failure */
 
@@ -1044,30 +1044,29 @@ static void dbg_setup(u8 addr, const struct usb_ctrlrequest *req)
 }
 
 /**
- * dbg_usb_op_fail: prints USB Operation FAIL event
+ * dbg_prime_fail: prints a PRIME FAIL event
  * @addr: endpoint address
  * @mEp:  endpoint structure
  */
-static void dbg_usb_op_fail(u8 addr, const char *name,
-				const struct ci13xxx_ep *mep)
+static void dbg_prime_fail(u8 addr, const char *name,
+				const struct ci13xxx_ep *mEp)
 {
 	char msg[DBG_DATA_MSG];
 	struct ci13xxx_req *req;
 	struct list_head *ptr = NULL;
 
-	if (mep != NULL) {
+	if (mEp != NULL) {
 		scnprintf(msg, sizeof(msg),
-			"%s Fail EP%d%s QH:%08X",
-			name, mep->num,
-			mep->dir ? "IN" : "OUT", mep->qh.ptr->cap);
+			  "PRIME fail EP%d%s QH:%08X",
+			  mEp->num, mEp->dir ? "IN" : "OUT", mEp->qh.ptr->cap);
 		dbg_print(addr, name, 0, msg);
 		scnprintf(msg, sizeof(msg),
 				"cap:%08X %08X %08X\n",
-				mep->qh.ptr->curr, mep->qh.ptr->td.next,
-				mep->qh.ptr->td.token);
+				mEp->qh.ptr->curr, mEp->qh.ptr->td.next,
+				mEp->qh.ptr->td.token);
 		dbg_print(addr, "QHEAD", 0, msg);
 
-		list_for_each(ptr, &mep->qh.queue) {
+		list_for_each(ptr, &mEp->qh.queue) {
 			req = list_entry(ptr, struct ci13xxx_req, queue);
 			scnprintf(msg, sizeof(msg),
 					"%08X:%08X:%08X\n",
@@ -1742,53 +1741,53 @@ static inline u8 _usb_addr(struct ci13xxx_ep *ep)
 
 static void ep_prime_timer_func(unsigned long data)
 {
-	struct ci13xxx_ep *mep = (struct ci13xxx_ep *)data;
+	struct ci13xxx_ep *mEp = (struct ci13xxx_ep *)data;
 	struct ci13xxx_req *req;
 	struct list_head *ptr = NULL;
-	int n = hw_ep_bit(mep->num, mep->dir);
+	int n = hw_ep_bit(mEp->num, mEp->dir);
 	unsigned long flags;
 
 
-	spin_lock_irqsave(mep->lock, flags);
+	spin_lock_irqsave(mEp->lock, flags);
 	if (!hw_cread(CAP_ENDPTPRIME, BIT(n)))
 		goto out;
 
-	if (list_empty(&mep->qh.queue))
+	if (list_empty(&mEp->qh.queue))
 		goto out;
 
-	req = list_entry(mep->qh.queue.next, struct ci13xxx_req, queue);
+	req = list_entry(mEp->qh.queue.next, struct ci13xxx_req, queue);
 
 	mb();
 	if (!(TD_STATUS_ACTIVE & req->ptr->token))
 		goto out;
 
-	mep->prime_timer_count++;
-	if (mep->prime_timer_count == MAX_PRIME_CHECK_RETRY) {
-		mep->prime_timer_count = 0;
+	mEp->prime_timer_count++;
+	if (mEp->prime_timer_count == MAX_PRIME_CHECK_RETRY) {
+		mEp->prime_timer_count = 0;
 		pr_info("ep%d dir:%s QH:cap:%08x cur:%08x next:%08x tkn:%08x\n",
-				mep->num, mep->dir ? "IN" : "OUT",
-				mep->qh.ptr->cap, mep->qh.ptr->curr,
-				mep->qh.ptr->td.next, mep->qh.ptr->td.token);
-		list_for_each(ptr, &mep->qh.queue) {
+				mEp->num, mEp->dir ? "IN" : "OUT",
+				mEp->qh.ptr->cap, mEp->qh.ptr->curr,
+				mEp->qh.ptr->td.next, mEp->qh.ptr->td.token);
+		list_for_each(ptr, &mEp->qh.queue) {
 			req = list_entry(ptr, struct ci13xxx_req, queue);
 			pr_info("\treq:%08xnext:%08xtkn:%08xpage0:%08xsts:%d\n",
 					req->dma, req->ptr->next,
 					req->ptr->token, req->ptr->page[0],
 					req->req.status);
 		}
-		dbg_usb_op_fail(0xFF, "PRIMEF", mep);
-		mep->prime_fail_count++;
+
+		dbg_prime_fail(0xFF, "PRIMEF", mEp);
+		mEp->prime_fail_count++;
 	} else {
-		mod_timer(&mep->prime_timer, EP_PRIME_CHECK_DELAY);
+		mod_timer(&mEp->prime_timer, EP_PRIME_CHECK_DELAY);
 	}
 
-	spin_unlock_irqrestore(mep->lock, flags);
+	spin_unlock_irqrestore(mEp->lock, flags);
 	return;
 
 out:
-	mep->prime_timer_count = 0;
-	spin_unlock_irqrestore(mep->lock, flags);
-
+	mEp->prime_timer_count = 0;
+	spin_unlock_irqrestore(mEp->lock, flags);
 }
 
 /**
