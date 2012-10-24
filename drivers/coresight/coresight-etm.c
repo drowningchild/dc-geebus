@@ -28,6 +28,7 @@
 #include <linux/stat.h>
 #include <linux/mutex.h>
 #include <linux/clk.h>
+#include <linux/cpu.h>
 #include <linux/of_coresight.h>
 #include <linux/coresight.h>
 #include <asm/sections.h>
@@ -1476,6 +1477,77 @@ static ssize_t etm_store_timestamp_event(struct device *dev,
 }
 static DEVICE_ATTR(timestamp_event, S_IRUGO | S_IWUSR, etm_show_timestamp_event,
 		   etm_store_timestamp_event);
+
+static ssize_t etm_show_pcsave(struct device *dev,
+			       struct device_attribute *attr, char *buf)
+{
+	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
+	unsigned long val;
+
+	val = drvdata->pcsave_enable;
+	return scnprintf(buf, PAGE_SIZE, "%#lx\n", val);
+}
+
+static int __etm_store_pcsave(struct etm_drvdata *drvdata, unsigned long val)
+{
+	int ret = 0;
+
+	ret = clk_prepare_enable(drvdata->clk);
+	if (ret)
+		return ret;
+
+	mutex_lock(&drvdata->mutex);
+	get_online_cpus();
+	if (val) {
+		if (drvdata->pcsave_enable)
+			goto out;
+
+		ret = smp_call_function_single(drvdata->cpu, etm_enable_pcsave,
+					       drvdata, 1);
+		if (ret)
+			goto out;
+		drvdata->pcsave_enable = true;
+
+		dev_info(drvdata->dev, "PC save enabled\n");
+	} else {
+		if (!drvdata->pcsave_enable)
+			goto out;
+
+		ret = smp_call_function_single(drvdata->cpu, etm_disable_pcsave,
+					       drvdata, 1);
+		if (ret)
+			goto out;
+		drvdata->pcsave_enable = false;
+
+		dev_info(drvdata->dev, "PC save disabled\n");
+	}
+out:
+	put_online_cpus();
+	mutex_unlock(&drvdata->mutex);
+
+	clk_disable_unprepare(drvdata->clk);
+	return ret;
+}
+
+static ssize_t etm_store_pcsave(struct device *dev,
+				struct device_attribute *attr,
+				const char *buf, size_t size)
+{
+	struct etm_drvdata *drvdata = dev_get_drvdata(dev->parent);
+	unsigned long val;
+	int ret;
+
+	if (sscanf(buf, "%lx", &val) != 1)
+		return -EINVAL;
+
+	ret = __etm_store_pcsave(drvdata, val);
+	if (ret)
+		return ret;
+
+	return size;
+}
+static DEVICE_ATTR(pcsave, S_IRUGO | S_IWUSR, etm_show_pcsave,
+		   etm_store_pcsave);
 
 static struct attribute *etm_attrs[] = {
 	&dev_attr_nr_addr_cmp.attr,
