@@ -87,20 +87,16 @@ static int rmnet_usb_suspend(struct usb_interface *iface, pm_message_t message)
 {
 	struct usbnet		*unet;
 	struct rmnet_ctrl_dev	*dev;
-	int			retval = 0;
 
 	unet = usb_get_intfdata(iface);
 
 	dev = (struct rmnet_ctrl_dev *)unet->data[1];
 
-	retval = usbnet_suspend(iface, message);
-	if (!retval) {
-		retval = rmnet_usb_ctrl_suspend(dev);
-		iface->dev.power.power_state.event = message.event;
-	} else {
-		dev_dbg(&iface->dev,
-			"%s: device is busy can not suspend\n", __func__);
-	}
+	if (work_busy(&dev->get_encap_work))
+		return -EBUSY;
+
+	if (usbnet_suspend(iface, message))
+		return -EBUSY;
 
 	usb_kill_anchored_urbs(&dev->rx_submitted);
 
