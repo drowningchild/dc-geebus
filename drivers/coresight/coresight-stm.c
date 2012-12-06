@@ -102,7 +102,7 @@ enum {
 					(ch * BYTES_PER_CHANNEL))
 #define stm_channel_off(type, opts)	(type & ~opts)
 
-#ifdef CONFIG_MSM_QDSS_STM_DEFAULT_ENABLE
+#ifdef CONFIG_CORESIGHT_STM_DEFAULT_ENABLE
 static int boot_enable = 1;
 #else
 static int boot_enable;
@@ -154,7 +154,10 @@ static void __stm_hwevent_enable(struct stm_drvdata *drvdata)
 {
 	STM_UNLOCK(drvdata);
 
-	stm_writel(drvdata, 0x0, STMHETER);
+	/* Program STMHETER to ensure TRIGOUTHETE (fed to CTI) is asserted
+	   for HW events.
+	*/
+	stm_writel(drvdata, 0xFFFFFFFF, STMHETER);
 	stm_writel(drvdata, 0xFFFFFFFF, STMHEER);
 	stm_writel(drvdata, 0x5, STMHEMCR);
 
@@ -191,7 +194,7 @@ static void __stm_port_enable(struct stm_drvdata *drvdata)
 {
 	STM_UNLOCK(drvdata);
 
-	stm_writel(drvdata, 0xFFFFFFFF, STMSPTER);
+	stm_writel(drvdata, 0x10, STMSPTRIGCSR);
 	stm_writel(drvdata, 0xFFFFFFFF, STMSPER);
 
 	STM_LOCK(drvdata);
@@ -218,9 +221,9 @@ static void __stm_enable(struct stm_drvdata *drvdata)
 
 	STM_UNLOCK(drvdata);
 
-	stm_writel(drvdata, 0x80, STMSYNCR);
+	stm_writel(drvdata, 0xFFF, STMSYNCR);
 	/* SYNCEN is read-only and HWTEN is not implemented */
-	stm_writel(drvdata, 0x30003, STMTCSR);
+	stm_writel(drvdata, 0x100003, STMTCSR);
 
 	STM_LOCK(drvdata);
 }
@@ -247,9 +250,9 @@ static void __stm_hwevent_disable(struct stm_drvdata *drvdata)
 {
 	STM_UNLOCK(drvdata);
 
-	stm_writel(drvdata, 0x0, STMHETER);
-	stm_writel(drvdata, 0x0, STMHEER);
 	stm_writel(drvdata, 0x0, STMHEMCR);
+	stm_writel(drvdata, 0x0, STMHEER);
+	stm_writel(drvdata, 0x0, STMHETER);
 
 	STM_LOCK(drvdata);
 }
@@ -267,7 +270,7 @@ static void __stm_port_disable(struct stm_drvdata *drvdata)
 	STM_UNLOCK(drvdata);
 
 	stm_writel(drvdata, 0x0, STMSPER);
-	stm_writel(drvdata, 0x0, STMSPTER);
+	stm_writel(drvdata, 0x0, STMSPTRIGCSR);
 
 	STM_LOCK(drvdata);
 }
@@ -284,7 +287,7 @@ static void __stm_disable(struct stm_drvdata *drvdata)
 {
 	STM_UNLOCK(drvdata);
 
-	stm_writel(drvdata, 0x30000, STMTCSR);
+	stm_writel(drvdata, 0x100000, STMTCSR);
 
 	STM_LOCK(drvdata);
 
@@ -484,8 +487,8 @@ int stm_trace(uint32_t options, uint8_t entity_id, uint8_t proto_id,
 
 	/* we don't support sizes more than 24bits (0 to 23) */
 	if (!(drvdata && drvdata->enable &&
-	    test_bit(entity_id, drvdata->entities) &&
-	    (size < 0x1000000)))
+	      test_bit(entity_id, drvdata->entities) && size &&
+	      (size < 0x1000000)))
 		return 0;
 
 	return __stm_trace(options, entity_id, proto_id, data, size);
@@ -501,7 +504,7 @@ static ssize_t stm_write(struct file *file, const char __user *data,
 	uint8_t entity_id, proto_id;
 	uint32_t options;
 
-	if (!drvdata->enable)
+	if (!drvdata->enable || !size)
 		return -EINVAL;
 
 	if (size > STM_TRACE_BUF_SIZE)
@@ -525,7 +528,8 @@ static ssize_t stm_write(struct file *file, const char __user *data,
 		proto_id = buf[3];
 		options = *(uint32_t *)(buf + 4);
 
-		if (!test_bit(entity_id, drvdata->entities)) {
+		if (!test_bit(entity_id, drvdata->entities) ||
+		    !(size - STM_USERSPACE_HEADER_SIZE)) {
 			kfree(buf);
 			return size;
 		}
@@ -763,6 +767,13 @@ static int __devinit stm_probe(struct platform_device *pdev)
 		goto err;
 
 	dev_info(drvdata->dev, "STM initialized\n");
+
+	/*
+	 * Enable and disable STM to undo the temporary default STM enable
+	 * done by RPM.
+	 */
+	coresight_enable(drvdata->csdev);
+	coresight_disable(drvdata->csdev);
 
 	if (boot_enable)
 		coresight_enable(drvdata->csdev);
