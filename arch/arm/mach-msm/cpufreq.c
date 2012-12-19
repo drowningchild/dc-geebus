@@ -260,7 +260,8 @@ EXPORT_SYMBOL(msm_cpufreq_set_freq_limits);
 #define OC_CPU_FREQ_MAX 1836000
 #endif
 #endif
-static int __cpuinit msm_cpufreq_init(struct cpufreq_policy *policy)
+
+static int msm_cpufreq_init(struct cpufreq_policy *policy)
 {
 	int cur_freq;
 	int index;
