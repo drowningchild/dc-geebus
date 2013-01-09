@@ -73,6 +73,8 @@ struct lge_touch_data
 struct touch_device_driver*	touch_device_func;
 struct workqueue_struct*	touch_wq;
 
+void hotplug_boostpulse(void);
+
 struct lge_touch_attribute {
 	struct attribute	attr;
 	ssize_t (*show)(struct lge_touch_data *ts, char *buf);
@@ -2080,26 +2082,52 @@ static void touch_work_func_c(struct work_struct *work)
 {
 	struct lge_touch_data *ts =
 			container_of(work, struct lge_touch_data, work);
-	u8 report_enable = 0;
-	int ret = 0;
 
+	u8 report_enable = 0;
+	int int_pin = 0;
+	int next_work = 0;
+	int ret = 0;
+	static unsigned int x = 0;
+	static unsigned int y = 0;
+	static bool flag = false;
+	static bool xy_lock = false;
+
+	atomic_dec(&ts->next_work);
+	ts->ts_data.total_num = 0;
+
+	if (unlikely(ts->work_sync_err_cnt >= MAX_RETRY_COUNT))
+	{
+		TOUCH_ERR_MSG("Work Sync Failed: Irq-pin has some unknown problems\n");
+		goto err_out_critical;
+	}
+
+	#ifdef LGE_TOUCH_TIME_DEBUG
+		do_gettimeofday(&t_debug[TIME_WORKQUEUE_START]);
+	#endif
+	if (unlikely(touch_debug_mask & DEBUG_TRACE))
+	{
+		TOUCH_DEBUG_MSG("\n");
+	}
 	ret = touch_work_pre_proc(ts);
 	if (ret == -EIO)
 		goto err_out_critical;
 	else if (ret == -EAGAIN)
 		goto out;
 
-	if (!ts->ts_data.total_num) {
+	if (!ts->ts_data.total_num)
+	{
 		touch_asb_input_report(ts, FINGER_RELEASED);
 		report_enable = 1;
 
-		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS))) {
+		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS)))
+		{
 			if (ts->ts_data.prev_total_num)
 				check_log_finger_released(ts);
 		}
 
 		ts->ts_data.prev_total_num = 0;
-	} else if (ts->ts_data.total_num <= ts->pdata->caps->max_id) {
+	} else if (ts->ts_data.total_num <= ts->pdata->caps->max_id)
+	{
 		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS)))
 			check_log_finger_changed(ts, ts->ts_data.total_num);
 
@@ -2108,6 +2136,49 @@ static void touch_work_func_c(struct work_struct *work)
 		touch_asb_input_report(ts, FINGER_PRESSED);
 		report_enable = 1;
 
+		touch_input_report(ts);
+	}
+	//pr_info("STATE: %d\n X: %d\n Y:%d\n", ts->ts_data.curr_data[0].status,ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
+	if (ts->ts_data.curr_data[0].status == ABS_PRESS)
+	{
+		if(!xy_lock)
+		{
+			xy_lock = true;
+			x = ts->ts_data.curr_data[0].x_position;
+			y = ts->ts_data.curr_data[0].y_position;
+		}
+			
+	if (x > 0 || y > 0)
+	{
+		if (ts->ts_data.curr_data[0].x_position > (x + 100) || ts->ts_data.curr_data[0].x_position < (x - 100))
+		{
+			if (!flag)
+			{
+				//pr_info("X: %d, X_post: %d,\n", x, ts->ts_data.curr_data[0].x_position);
+				hotplug_boostpulse();
+				flag = true;
+			}
+		} else if (ts->ts_data.curr_data[0].y_position > (y + 100) || ts->ts_data.curr_data[0].y_position < (y - 100))
+		{
+			if (!flag)
+			{
+				//pr_info("Y: %d, Y_post: %d,\n", y, ts->ts_data.curr_data[0].y_position);
+				hotplug_boostpulse();
+				flag = true;
+			}
+		}
+	} else
+	{
+		x = 0;
+		y = 0;
+		flag = false;
+		xy_lock = false;
+	}
+
+out:
+	if (likely(ts->pdata->role->operation_mode == INTERRUPT_MODE))
+	{
+		next_work = atomic_read(&ts->next_work);
 		memcpy(ts->ts_data.prev_data, ts->ts_data.curr_data, sizeof(ts->ts_data.curr_data));
 	}
 
@@ -2115,17 +2186,16 @@ static void touch_work_func_c(struct work_struct *work)
 	memset(&ts->ts_data.curr_data, 0x0, sizeof(ts->ts_data.curr_data));
 
 	if (report_enable)
+	{
 		input_sync(ts->input_dev);
-
-out:
-	touch_work_post_proc(ts, WORK_POST_OUT);
-	return;
+	}
 
 err_out_critical:
 	touch_work_post_proc(ts, WORK_POST_ERR_CIRTICAL);
 	return;
-}
 
+}
+}
 
 /* touch_fw_upgrade_func
  *
@@ -2135,6 +2205,7 @@ static void touch_fw_upgrade_func(struct work_struct *work_fw_upgrade)
 {
 	struct lge_touch_data *ts =
 			container_of(work_fw_upgrade, struct lge_touch_data, work_fw_upgrade);
+	
 	u8	saved_state = ts->curr_pwr_state;
 
 	if (unlikely(touch_debug_mask & DEBUG_TRACE))
