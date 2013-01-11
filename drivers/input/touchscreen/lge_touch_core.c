@@ -81,6 +81,10 @@ struct lge_touch_attribute {
 	ssize_t (*store)(struct lge_touch_data *ts, const char *buf, size_t count);
 };
 
+static int is_pressure;
+static int is_width_major;
+static int is_width_minor;
+
 #define LGE_TOUCH_ATTR(_name, _mode, _show, _store)	\
 struct lge_touch_attribute lge_touch_attr_##_name = __ATTR(_name, _mode, _show, _store)
 
@@ -2078,6 +2082,57 @@ err_out_critical:
 	return;
 }
 
+static void touch_input_report(struct lge_touch_data *ts)
+{
+	int	id;
+
+	for (id = 0; id < ts->pdata->caps->max_id; id++) {
+		if (!ts->ts_data.curr_data[id].status)
+			continue;
+
+		input_mt_slot(ts->input_dev, id);
+		input_mt_report_slot_state(ts->input_dev,
+				ts->ts_data.curr_data[id].tool_type,
+				ts->ts_data.curr_data[id].status != ABS_RELEASE);
+
+		if (ts->ts_data.curr_data[id].status != ABS_RELEASE) {
+			input_report_abs(ts->input_dev, ABS_MT_POSITION_X,
+					ts->ts_data.curr_data[id].x_position);
+			input_report_abs(ts->input_dev, ABS_MT_POSITION_Y,
+					ts->ts_data.curr_data[id].y_position);
+			if (is_pressure)
+				input_report_abs(ts->input_dev, ABS_MT_PRESSURE,
+					ts->ts_data.curr_data[id].pressure);
+
+			/* Only support circle region */
+			if (is_width_major)
+				input_report_abs(ts->input_dev,
+					ABS_MT_TOUCH_MAJOR,
+					ts->ts_data.curr_data[id].width_major);
+
+			if (is_width_minor)
+				input_report_abs(ts->input_dev,
+					ABS_MT_TOUCH_MINOR,
+					ts->ts_data.curr_data[id].width_minor);
+#ifdef LGE_TOUCH_POINT_DEBUG
+			if (id == 0 && tr_last_index < MAX_TRACE) {
+				tr_data[tr_last_index].x = ts->ts_data.curr_data[id].x_position;
+				tr_data[tr_last_index].y = ts->ts_data.curr_data[id].y_position;
+				tr_data[tr_last_index++].time = ktime_to_ms(ktime_get());
+			}
+#endif
+		}
+		else {
+			ts->ts_data.curr_data[id].status = 0;
+#ifdef LGE_TOUCH_POINT_DEBUG
+			dump_pointer_trace();
+#endif
+		}
+	}
+
+	input_sync(ts->input_dev);
+}
+
 static void touch_work_func_c(struct work_struct *work)
 {
 	struct lge_touch_data *ts =
@@ -2131,42 +2186,22 @@ static void touch_work_func_c(struct work_struct *work)
 		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS)))
 			check_log_finger_changed(ts, ts->ts_data.total_num);
 
-		ts->ts_data.prev_total_num = ts->ts_data.total_num;
-
-		touch_asb_input_report(ts, FINGER_PRESSED);
-		report_enable = 1;
-
-		touch_input_report(ts);
-	}
-	//pr_info("STATE: %d\n X: %d\n Y:%d\n", ts->ts_data.curr_data[0].status,ts->ts_data.curr_data[0].x_position, ts->ts_data.curr_data[0].y_position);
-	if (ts->ts_data.curr_data[0].status == ABS_PRESS)
-	{
-		if(!xy_lock)
-		{
-			xy_lock = true;
+	touch_input_report(ts);
+	
+	if (ts->ts_data.curr_data[0].status == ABS_PRESS) {
+		if(!xy_lock) {
 			x = ts->ts_data.curr_data[0].x_position;
 			y = ts->ts_data.curr_data[0].y_position;
+			xy_lock = true;
 		}
 			
-	if (x > 0 || y > 0)
-	{
-		if (ts->ts_data.curr_data[0].x_position > (x + 100) || ts->ts_data.curr_data[0].x_position < (x - 100))
-		{
-			if (!flag)
-			{
-				//pr_info("X: %d, X_post: %d,\n", x, ts->ts_data.curr_data[0].x_position);
-				hotplug_boostpulse();
-				flag = true;
-			}
-		} else if (ts->ts_data.curr_data[0].y_position > (y + 100) || ts->ts_data.curr_data[0].y_position < (y - 100))
-		{
-			if (!flag)
-			{
-				//pr_info("Y: %d, Y_post: %d,\n", y, ts->ts_data.curr_data[0].y_position);
-				hotplug_boostpulse();
-				flag = true;
-			}
-		}
+	if (ts->ts_data.curr_data[0].x_position > (x + 100) || ts->ts_data.curr_data[0].x_position < (x - 100)) {
+		//hotplug_boostpulse();
+		flag = true;
+	} else if (ts->ts_data.curr_data[0].y_position > (y + 100) || ts->ts_data.curr_data[0].y_position < (y - 100)) {
+		//hotplug_boostpulse();
+		flag = true;
+	}
 	} else
 	{
 		x = 0;
@@ -3416,6 +3451,10 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	ts->gf_ctrl.max_pressure = 255;
 
 	get_section(&ts->st_info, ts->pdata);
+
+	is_pressure = ts->pdata->caps->is_pressure_supported;
+	is_width_major = ts->pdata->caps->is_width_supported;
+	is_width_minor = ts->pdata->caps->is_width_supported;
 
 	ts->client = client;
 #ifdef CUST_G_TOUCH

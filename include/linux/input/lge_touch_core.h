@@ -104,6 +104,7 @@ struct t_data
 	u16	width_minor;
 	u16	width_orientation;
 	u16	pressure;
+	u16	tool_type;
 	u8	status;
 };
 
