@@ -72,8 +72,7 @@ struct lge_touch_data
 
 struct touch_device_driver*	touch_device_func;
 struct workqueue_struct*	touch_wq;
-
-void hotplug_boostpulse(void);
+//void hotplug_boostpulse(void);
 
 struct lge_touch_attribute {
 	struct attribute	attr;
@@ -2142,10 +2141,10 @@ static void touch_work_func_c(struct work_struct *work)
 	int int_pin = 0;
 	int next_work = 0;
 	int ret = 0;
-	static unsigned int x = 0;
+	/*static unsigned int x = 0;
 	static unsigned int y = 0;
 	static bool flag = false;
-	static bool xy_lock = false;
+	static bool xy_lock = false;*/
 
 	atomic_dec(&ts->next_work);
 	ts->ts_data.total_num = 0;
@@ -2188,7 +2187,7 @@ static void touch_work_func_c(struct work_struct *work)
 
 	touch_input_report(ts);
 	
-	if (ts->ts_data.curr_data[0].status == ABS_PRESS) {
+	/*if (ts->ts_data.curr_data[0].status == ABS_PRESS) {
 		if(!xy_lock) {
 			x = ts->ts_data.curr_data[0].x_position;
 			y = ts->ts_data.curr_data[0].y_position;
@@ -2207,8 +2206,8 @@ static void touch_work_func_c(struct work_struct *work)
 		x = 0;
 		y = 0;
 		flag = false;
-		xy_lock = false;
-	}
+		xy_lock = false
+	}*/
 
 out:
 	if (likely(ts->pdata->role->operation_mode == INTERRUPT_MODE))
