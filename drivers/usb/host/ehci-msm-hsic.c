@@ -79,7 +79,7 @@ struct msm_hsic_hcd {
 	struct clk		*cal_clk;
 	struct regulator	*hsic_vddcx;
 	struct regulator	*hsic_gdsc;
-	bool			async_int;
+	atomic_t		async_int;
 	atomic_t                in_lpm;
 	struct wake_lock	wlock;
 	int			peripheral_status_irq;
@@ -818,6 +818,9 @@ static int msm_hsic_resume(struct msm_hsic_hcd *mehci)
 		return 0;
 	}
 
+	/* Handles race with Async interrupt */
+	disable_irq(hcd->irq);
+
 	if (pdata && pdata->standalone_latency)
 		pm_qos_update_request(&mehci->pm_qos_req_dma,
 			pdata->standalone_latency + 1);
@@ -896,7 +899,7 @@ skip_phy_resume:
 	}
 
 	enable_irq(hcd->irq);
-	dev_dbg(mehci->dev, "HSIC-USB exited from low power mode\n");
+	dev_info(mehci->dev, "HSIC-USB exited from low power mode\n");
 
 	return 0;
 }
