@@ -917,6 +917,16 @@ static struct msm_usb_host_platform_data msm_ehci_host_pdata4;
 
 static void __init apq8064_ehci_host_init(void)
 {
+//TODO
+#ifdef CONFIG_SII8334_MHL_TX
+/*	msm_ehci_host_pdata3.dock_connect_irq =
+		PM8921_MPP_IRQ(PM8921_IRQ_BASE, 9);
+
+	apq8064_device_ehci_host3.dev.platform_data =
+				&msm_ehci_host_pdata3;
+	platform_device_register(&apq8064_device_ehci_host3);
+*/
+#endif
 }
 #ifdef CONFIG_SMB349_CHARGER
 static struct smb349_platform_data smb349_data __initdata = {
@@ -2035,6 +2045,11 @@ static void __init apq8064_common_init(void)
 	register_i2c_devices();
 	apq8064_init_pmic();
 
+//TODO
+#ifdef CONFIG_SII8334_MHL_TX
+//	msm_otg_pdata.mhl_enable = true;
+#endif
+
 	android_usb_pdata.swfi_latency =
 		msm_rpmrs_levels[0].latency_us;
 
@@ -2122,7 +2137,12 @@ static void __init apq8064_mako_init(void)
 	lge_add_panic_handler_devices();
 	lge_add_backlight_devices();
 	lge_add_sound_devices();
+#ifdef CONFIG_BCM2079X
 	lge_add_bcm2079x_device();
+#endif
+#ifdef CONFIG_LGE_NFC
+	lge_add_nfc_devices();
+#endif
 #ifdef CONFIG_LGE_QFPROM_INTERFACE
 	lge_add_qfprom_devices();
 #endif
