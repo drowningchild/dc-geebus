@@ -43,7 +43,7 @@
 
 #define GPIO_EAR_MIC_BIAS_EN        PM8921_GPIO_PM_TO_SYS(20)
 #define GPIO_EAR_SENSE_N            82
-#define GPIO_EAR_SENSE_N_REV11      81
+#define GPIO_EAR_SENSE_N_REV11      82
 #define GPIO_EAR_MIC_EN             PM8921_GPIO_PM_TO_SYS(31)
 #define GPIO_EARPOL_DETECT          PM8921_GPIO_PM_TO_SYS(32)
 #define GPIO_EAR_KEY_INT            83

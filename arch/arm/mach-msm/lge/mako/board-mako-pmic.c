@@ -225,6 +225,9 @@ static struct led_info pm8921_led_info[] = {
 	},
 	[1] = {
 		.name			= "button-backlight",
+	},
+	[2] = {
+		.name			= "led:green",
 	}
 };
 #else
@@ -296,6 +299,18 @@ static struct pm8xxx_led_config pm8921_led_configs[] = {
 		.mode = PM8XXX_LED_MODE_MANUAL,
 		.max_current = PM8921_KEY_LED_MAX_CURRENT,
 
+	},
+	[2] = {
+		.id = PM8XXX_ID_LED_2,
+#ifdef CONFIG_LGE_PM_PWM_LED
+		.mode = PM8XXX_LED_MODE_PWM1,
+		.pwm_channel = 4,
+		.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
+		.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
+#else
+		.mode = PM8XXX_LED_MODE_MANUAL,
+#endif
+		.max_current = PM8921_LC_LED_MAX_CURRENT,
 	},
 };
 
@@ -699,21 +714,14 @@ struct pm8921_bms_battery_data lge_2100_mako_data =  {
 };
 
 static unsigned int keymap[] = {
-	KEY(0, 0, KEY_VOLUMEDOWN),
-	KEY(0, 1, KEY_VOLUMEUP),
+	KEY(0, 0, KEY_VOLUMEUP),
+	KEY(0, 1, KEY_VOLUMEDOWN),
 };
 
 static struct matrix_keymap_data keymap_data = {
 	.keymap_size    = ARRAY_SIZE(keymap),
 	.keymap         = keymap,
 };
-
-static __init void mako_fixed_keymap(void) {
-	if (lge_get_board_revno() < HW_REV_C) {
-		keymap[0] = KEY(0, 0, KEY_VOLUMEUP);
-		keymap[1] = KEY(0, 1, KEY_VOLUMEDOWN);
-	}
-}
 
 static struct pm8xxx_keypad_platform_data keypad_data = {
 	.input_name             = "keypad_8064",
@@ -900,8 +908,6 @@ void __init mako_set_adcmap(void)
 void __init apq8064_init_pmic(void)
 {
 	pmic_reset_irq = PM8921_IRQ_BASE + PM8921_RESOUT_IRQ;
-
-	mako_fixed_keymap();
 	mako_set_adcmap();
 
 #if !defined(CONFIG_MACH_APQ8064_J1A)
