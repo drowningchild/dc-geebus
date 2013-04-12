@@ -284,14 +284,14 @@ static struct pm8xxx_pwm_duty_cycles pm8921_led0_pwm_duty_cycles = {
 static struct pm8xxx_led_config pm8921_led_configs[] = {
 	[0] = {
 		.id = PM8XXX_ID_LED_0,
-#ifdef CONFIG_LGE_PM_PWM_LED
-		.mode = PM8XXX_LED_MODE_PWM2,
-		.pwm_channel = 5,
-		.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
-		.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
-#else
-		.mode = PM8XXX_LED_MODE_MANUAL,
-#endif
+		#ifdef CONFIG_LGE_PM_PWM_LED
+			.mode = PM8XXX_LED_MODE_PWM2,
+			.pwm_channel = 5,
+			.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
+			.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
+		#else
+			.mode = PM8XXX_LED_MODE_MANUAL,
+		#endif
 		.max_current = PM8921_LC_LED_MAX_CURRENT,
 	},
 	[1] = {
@@ -302,14 +302,14 @@ static struct pm8xxx_led_config pm8921_led_configs[] = {
 	},
 	[2] = {
 		.id = PM8XXX_ID_LED_2,
-#ifdef CONFIG_LGE_PM_PWM_LED
-		.mode = PM8XXX_LED_MODE_PWM1,
-		.pwm_channel = 4,
-		.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
-		.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
-#else
-		.mode = PM8XXX_LED_MODE_MANUAL,
-#endif
+		#ifdef CONFIG_LGE_PM_PWM_LED
+			.mode = PM8XXX_LED_MODE_PWM1,
+			.pwm_channel = 4,
+			.pwm_period_us = PM8XXX_LED_PWM_PERIOD,
+			.pwm_duty_cycles = &pm8921_led0_pwm_duty_cycles,
+		#else
+			.mode = PM8XXX_LED_MODE_MANUAL,
+		#endif
 		.max_current = PM8921_LC_LED_MAX_CURRENT,
 	},
 };
