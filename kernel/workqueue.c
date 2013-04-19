@@ -1023,10 +1023,7 @@ static void __queue_work(unsigned int cpu, struct workqueue_struct *wq,
 	cwq = get_cwq(gcwq->cpu, wq);
 	trace_workqueue_queue_work(cpu, cwq, work);
 
-	if (WARN_ON(!list_empty(&work->entry))) {
-		spin_unlock_irqrestore(&gcwq->lock, flags);
-		return;
-	}
+	BUG_ON(!list_empty(&work->entry));
 
 	cwq->nr_in_flight[cwq->work_color]++;
 	work_flags = work_color_to_flags(cwq->work_color);
@@ -2510,9 +2507,6 @@ bool flush_work(struct work_struct *work)
 {
 	struct wq_barrier barr;
 
-	lock_map_acquire(&work->lockdep_map);
-	lock_map_release(&work->lockdep_map);
-
 	if (start_flush_work(work, &barr, true)) {
 		wait_for_completion(&barr.done);
 		destroy_work_on_stack(&barr.work);
@@ -3528,7 +3522,7 @@ __acquires(&gcwq->lock)
 	}
 }
 
-static int __devinit workqueue_cpu_callback(struct notifier_block *nfb,
+static int workqueue_cpu_callback(struct notifier_block *nfb,
 						unsigned long action,
 						void *hcpu)
 {
