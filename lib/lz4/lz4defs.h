@@ -1,40 +1,11 @@
 /*
- * LZ4 Decompressor for Linux kernel
+ * lz4defs.h -- architecture specific defines
  *
  * Copyright (C) 2013, LG Electronics, Kyungsik Lee <kyungsik.lee@lge.com>
  *
- * Based on LZ4 implementation by Yann Collet.
- *
- * LZ4 - Fast LZ compression algorithm
- * Copyright (C) 2011-2012, Yann Collet.
- * BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are
- * met:
- *
- *     * Redistributions of source code must retain the above copyright
- * notice, this list of conditions and the following disclaimer.
- *     * Redistributions in binary form must reproduce the above
- * copyright notice, this list of conditions and the following disclaimer
- * in the documentation and/or other materials provided with the
- * distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- *  You can contact the author at :
- *  - LZ4 homepage : http://fastcompression.blogspot.com/p/lz4.html
- *  - LZ4 source repository : http://code.google.com/p/lz4/
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License version 2 as
+ * published by the Free Software Foundation.
  */
 
 /*
@@ -48,19 +19,12 @@
 #endif
 
 /*
- * Compiler Options
- */
-#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 199901L /* C99 */
-/* "restrict" is a known keyword */
-#else
-#define restrict	/* Disable restrict */
-#endif
-
-/*
  * Architecture-specific macros
  */
 #define BYTE	u8
-#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)
+#if defined(CONFIG_HAVE_EFFICIENT_UNALIGNED_ACCESS)		\
+	|| defined(CONFIG_ARM) && __LINUX_ARM_ARCH__ >= 6	\
+	&& defined(ARM_EFFICIENT_UNALIGNED_ACCESS)
 typedef struct _U32_S { u32 v; } U32_S;
 typedef struct _U64_S { u64 v; } U64_S;
 
@@ -87,33 +51,33 @@ typedef struct _U64_S { u64 v; } U64_S;
 #define STEPSIZE 8
 
 #define LZ4_COPYSTEP(s, d)	\
-	do {	\
+	do {			\
 		PUT8(s, d);	\
-		d += 8;	\
-		s += 8;	\
+		d += 8;		\
+		s += 8;		\
 	} while (0)
 
 #define LZ4_COPYPACKET(s, d)	LZ4_COPYSTEP(s, d)
 
-#define LZ4_SECURECOPY(s, d, e)	\
-	do {				\
-		if (d < e) {		\
+#define LZ4_SECURECOPY(s, d, e)			\
+	do {					\
+		if (d < e) {			\
 			LZ4_WILDCOPY(s, d, e);	\
-		}	\
+		}				\
 	} while (0)
 
 #else	/* 32-bit */
 #define STEPSIZE 4
 
 #define LZ4_COPYSTEP(s, d)	\
-	do {	\
+	do {			\
 		PUT4(s, d);	\
-		d += 4;	\
-		s += 4;	\
+		d += 4;		\
+		s += 4;		\
 	} while (0)
 
-#define LZ4_COPYPACKET(s, d)	\
-	do {			\
+#define LZ4_COPYPACKET(s, d)		\
+	do {				\
 		LZ4_COPYSTEP(s, d);	\
 		LZ4_COPYSTEP(s, d);	\
 	} while (0)
@@ -123,7 +87,8 @@ typedef struct _U64_S { u64 v; } U64_S;
 
 #define LZ4_READ_LITTLEENDIAN_16(d, s, p) \
 	(d = s - get_unaligned_le16(p))
-#define LZ4_WILDCOPY(s, d, e)	\
+
+#define LZ4_WILDCOPY(s, d, e)		\
 	do {				\
 		LZ4_COPYPACKET(s, d);	\
 	} while (d < e)
