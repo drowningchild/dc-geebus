@@ -145,6 +145,7 @@ struct touch_fw_info
 	u8		syna_img_fw_version[5];
 	u8		syna_img_fw_product_id[11];
 #endif
+	bool            fw_force_rework;
 };
 
 struct rect

@@ -45,26 +45,28 @@ static int f54_fullrawcap_mode = 0;
 
 struct lge_touch_data
 {
-	void*			h_touch;
-	atomic_t		next_work;
-	atomic_t		device_init;
+	void*				h_touch;
+	atomic_t			next_work;
+	atomic_t			device_init;
 	u8				work_sync_err_cnt;
 	u8				ic_init_err_cnt;
-	volatile int	curr_pwr_state;
+	volatile int			curr_pwr_state;
+	int                             curr_resume_state;
 	int				int_pin_state;
-	struct i2c_client 			*client;
-	struct input_dev 			*input_dev;
-	struct hrtimer 				timer;
+	struct i2c_client 		*client;
+	struct input_dev 		*input_dev;
+	struct hrtimer 			timer;
 	struct work_struct  		work;
-	struct delayed_work			work_init;
-	struct delayed_work			work_touch_lock;
+	struct delayed_work		work_init;
+	struct delayed_work		work_touch_lock;
 	struct work_struct  		work_fw_upgrade;
 	struct early_suspend		early_suspend;
 	struct touch_platform_data 	*pdata;
-	struct touch_data			ts_data;
+	struct touch_data		ts_data;
 	struct touch_fw_info		fw_info;
-	struct section_info			st_info;
-	struct kobject 				lge_touch_kobj;
+	struct fw_upgrade_info          fw_upgrade;
+	struct section_info		st_info;
+	struct kobject 			lge_touch_kobj;
 	struct ghost_finger_ctrl	gf_ctrl;
 	struct jitter_filter_info	jitter_filter;
 	struct accuracy_filter_info	accuracy_filter;
@@ -83,6 +85,7 @@ struct lge_touch_attribute {
 static int is_pressure;
 static int is_width_major;
 static int is_width_minor;
+static bool is_screen_locked;
 
 #define LGE_TOUCH_ATTR(_name, _mode, _show, _store)	\
 struct lge_touch_attribute lge_touch_attr_##_name = __ATTR(_name, _mode, _show, _store)
@@ -2129,6 +2132,9 @@ static void touch_input_report(struct lge_touch_data *ts)
 		}
 	}
 
+	if (is_screen_locked)
+		is_screen_locked = false;
+
 	input_sync(ts->input_dev);
 }
 
@@ -2178,6 +2184,10 @@ static void touch_work_func_c(struct work_struct *work)
 			if (ts->ts_data.prev_total_num)
 				check_log_finger_released(ts);
 		}
+
+	/* Accuracy Solution */
+	if (!is_screen_locked)
+		accuracy_filter_func(ts);
 
 		ts->ts_data.prev_total_num = 0;
 	} else if (ts->ts_data.total_num <= ts->pdata->caps->max_id)
@@ -3591,6 +3601,10 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 #endif
 	i2c_set_clientdata(client, ts);
 
+	ts->fw_info.fw_force_rework = false;
+
+	is_screen_locked = false;
+
 	/* Specific device probe */
 	if (touch_device_func->probe) {
 		ret = touch_device_func->probe(client);
@@ -3749,14 +3763,12 @@ static int touch_probe(struct i2c_client *client, const struct i2c_device_id *id
 	}
 
 	/* accuracy solution */
-	if (ts->pdata->role->accuracy_filter_enable){
-		ts->accuracy_filter.ignore_pressure_gap = 5;
-		ts->accuracy_filter.delta_max = 50;
-		ts->accuracy_filter.max_pressure = 55;
-		ts->accuracy_filter.time_to_max_pressure = 1;
-		ts->accuracy_filter.direction_count = 8;
-		ts->accuracy_filter.touch_max_count = 4;
-	}
+	ts->accuracy_filter.ignore_pressure_gap = 0;
+	ts->accuracy_filter.delta_max = 0;
+	ts->accuracy_filter.max_pressure = 0;
+	ts->accuracy_filter.time_to_max_pressure = 200;
+	ts->accuracy_filter.direction_count = 20;
+	ts->accuracy_filter.touch_max_count = 40;
 
 #if defined(CONFIG_HAS_EARLYSUSPEND)
 	ts->early_suspend.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
@@ -3870,7 +3882,11 @@ static void touch_early_suspend(struct early_suspend *h)
 	if (unlikely(touch_debug_mask & DEBUG_TRACE))
 		TOUCH_DEBUG_MSG("\n");
 
-	if (ts->fw_info.fw_upgrade.is_downloading == UNDER_DOWNLOADING){
+	ts->curr_resume_state = 0;
+
+	is_screen_locked = true;
+
+	if (ts->fw_upgrade.is_downloading == UNDER_DOWNLOADING) {
 		TOUCH_INFO_MSG("early_suspend is not executed\n");
 		return;
 	}
