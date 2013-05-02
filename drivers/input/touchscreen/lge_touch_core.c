@@ -2161,6 +2161,7 @@ static void touch_work_func_c(struct work_struct *work)
 	static unsigned int y = 0;
 	static bool flag = false;
 	static bool xy_lock = false;
+	unsigned long now = ktime_to_ms(ktime_get());
 	policy = cpufreq_cpu_get(0);
 
 	atomic_dec(&ts->next_work);
@@ -2196,20 +2197,25 @@ static void touch_work_func_c(struct work_struct *work)
 				check_log_finger_released(ts);
 		}
 
-	/* Accuracy Solution */
-	if (!is_screen_locked)
-		accuracy_filter_func(ts);
-
 		ts->ts_data.prev_total_num = 0;
+
 	} else if (ts->ts_data.total_num <= ts->pdata->caps->max_id)
 	{
 		if (likely(touch_debug_mask & (DEBUG_BASE_INFO | DEBUG_ABS)))
 			check_log_finger_changed(ts, ts->ts_data.total_num);
 
+	}
+
+	/* Accuracy Solution */
+	if (!is_screen_locked)
+                accuracy_filter_func(ts);
+	
 	touch_input_report(ts);
 
-	if (ts->ts_data.curr_data[0].status == ABS_PRESS) {
-		if(!xy_lock) {
+	if (ts->ts_data.curr_data[0].status == ABS_PRESS) 
+	{
+		if(!xy_lock)
+		{
 			x = ts->ts_data.curr_data[0].x_position;
 			y = ts->ts_data.curr_data[0].y_position;
 			xy_lock = true;
@@ -2238,9 +2244,7 @@ static void touch_work_func_c(struct work_struct *work)
 		if (get_min_sample_time() < BOOSTED_TIME_MS && 
 			likely(get_dynamic_scaling()))
 				scale_min_sample_time(BOOSTED_TIME_MS);
-	} 
 		flag = true;
-	}
 	} else
 	{
 		x = 0;
@@ -2267,8 +2271,6 @@ out:
 err_out_critical:
 	touch_work_post_proc(ts, WORK_POST_ERR_CIRTICAL);
 	return;
-
-}
 }
 
 /* touch_fw_upgrade_func
