@@ -2139,7 +2139,10 @@ static void touch_input_report(struct lge_touch_data *ts)
 	input_sync(ts->input_dev);
 }
 
-#define BOOST_FREQ 1026000
+#define TOUCH_BOOST_FREQ get_input_boost_freq()
+#define SWIPE_BOOST_FREQ 702000
+#define BOOSTED_TIME 200
+
 static struct cpufreq_policy *policy;
 
 /*
@@ -2212,9 +2215,18 @@ static void touch_work_func_c(struct work_struct *work)
 			xy_lock = true;
 		}
 			
-	if (ts->ts_data.curr_data[0].x_position > (x + 100) || ts->ts_data.curr_data[0].x_position < (x - 100)) {
-		if (policy->cur < BOOST_FREQ)
-                                __cpufreq_driver_target(policy, BOOST_FREQ, CPUFREQ_RELATION_H);
+		if (ts->ts_data.curr_data[0].x_position > (x + 100) || 
+			ts->ts_data.curr_data[0].x_position < (x - 100) || 
+			ts->ts_data.curr_data[0].y_position > (y + 100) || 
+			ts->ts_data.curr_data[0].y_position < (y - 100)) 
+		{
+			if (policy->cur < SWIPE_BOOST_FREQ)
+				__cpufreq_driver_target(policy, SWIPE_BOOST_FREQ, 
+					CPUFREQ_RELATION_H);
+
+			is_touching(true, now);
+			scale_min_sample_time(BOOSTED_TIME);
+		}
 
 		flag = true;
 	} else if (ts->ts_data.curr_data[0].y_position > (y + 100) || ts->ts_data.curr_data[0].y_position < (y - 100)) {
