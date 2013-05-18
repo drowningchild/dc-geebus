@@ -2228,11 +2228,16 @@ static void touch_work_func_c(struct work_struct *work)
 			scale_min_sample_time(BOOSTED_TIME);
 		}
 
-		flag = true;
-	} else if (ts->ts_data.curr_data[0].y_position > (y + 100) || ts->ts_data.curr_data[0].y_position < (y - 100)) {
-		if (policy->cur < BOOST_FREQ)
-                                __cpufreq_driver_target(policy, BOOST_FREQ, CPUFREQ_RELATION_H);
+		else if (policy->cur < TOUCH_BOOST_FREQ && num_online_cpus() < 2)
+		{
+			__cpufreq_driver_target(policy, TOUCH_BOOST_FREQ, 
+				CPUFREQ_RELATION_H);
+		}
 
+		if (get_min_sample_time() < BOOSTED_TIME_MS && 
+			likely(get_dynamic_scaling()))
+				scale_min_sample_time(BOOSTED_TIME);
+	} 
 		flag = true;
 	}
 	} else

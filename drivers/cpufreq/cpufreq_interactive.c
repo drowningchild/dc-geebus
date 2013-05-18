@@ -112,6 +112,21 @@ static struct cpufreq_interactive_inputopen inputopen;
 
 static int boost_val;
 
+/*
+ * The CPU will be boosted to this frequency when the screen is
+ * touched. input_boost needs to be enabled.
+ */
+
+static int input_boost_freq;
+
+static bool io_is_busy;
+
+/* 
+ * dynamic tunables scaling flag linked to the 
+ * hotplug driver 
+ */ 
+static bool dynamic_scaling;
+
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 		unsigned int event);
 
@@ -798,6 +813,74 @@ static ssize_t store_boostpulse(struct kobject *kobj, struct attribute *attr,
 static struct global_attr boostpulse =
 	__ATTR(boostpulse, 0644, NULL, store_boostpulse);
 
+static ssize_t show_input_boost_freq(struct kobject *kobj, struct attribute *attr,
+			  char *buf)
+{
+	return sprintf(buf, "%d\n", input_boost_freq);
+}
+
+static ssize_t store_input_boost_freq(struct kobject *kobj, struct attribute *attr,
+			   const char *buf, size_t count)
+{
+	int ret;
+	unsigned long val;
+
+	ret = strict_strtoul(buf, 0, &val);
+	if (ret < 0)
+		return ret;
+
+	input_boost_freq = val;
+
+	return count;
+}
+
+static struct global_attr input_boost_freq_attr = __ATTR(input_boost_freq, 0644,
+		show_input_boost_freq, store_input_boost_freq);
+
+static ssize_t show_io_is_busy(struct kobject *kobj,
+      struct attribute *attr, char *buf)
+{
+  return sprintf(buf, "%u\n", io_is_busy);
+}
+
+static ssize_t store_io_is_busy(struct kobject *kobj,
+      struct attribute *attr, const char *buf, size_t count)
+{
+  int ret;
+  unsigned int val;
+
+  ret = sscanf(buf, "%d", &val);
+  if (ret < 0)
+    return ret;
+  io_is_busy = val;
+  return count;
+}
+
+static struct global_attr io_is_busy_attr = __ATTR(io_is_busy, 0644,
+    show_io_is_busy, store_io_is_busy);
+
+static ssize_t show_dynamic_scaling(struct kobject *kobj,
+      struct attribute *attr, char *buf)
+{
+  return sprintf(buf, "%u\n", dynamic_scaling);
+}
+
+static ssize_t store_dynamic_scaling(struct kobject *kobj,
+      struct attribute *attr, const char *buf, size_t count)
+{
+  int ret;
+  unsigned int val;
+
+  ret = sscanf(buf, "%d", &val);
+  if (ret < 0)
+    return ret;
+  dynamic_scaling = val;
+  return count;
+}
+
+static struct global_attr dynamic_scaling_attr = __ATTR(dynamic_scaling, 0644,
+    show_dynamic_scaling, store_dynamic_scaling);
+
 static struct attribute *interactive_attributes[] = {
 	&hispeed_freq_attr.attr,
 	&go_hispeed_load_attr.attr,
@@ -807,6 +890,9 @@ static struct attribute *interactive_attributes[] = {
 	&input_boost.attr,
 	&boost.attr,
 	&boostpulse.attr,
+	&input_boost_freq_attr.attr,
+	&io_is_busy_attr.attr,
+	&dynamic_scaling_attr.attr,
 	NULL,
 };
 
@@ -817,22 +903,41 @@ static struct attribute_group interactive_attr_group = {
 
 void scale_above_hispeed_delay(unsigned int new_above_hispeed_delay)
 {
-	above_hispeed_delay_val = new_above_hispeed_delay * 1000;
+	if (dynamic_scaling)
+		above_hispeed_delay_val = new_above_hispeed_delay * 1000;
 }
 
 void scale_go_hispeed_load(unsigned int new_go_hispeed_load)
 {
-	go_hispeed_load = new_go_hispeed_load;
+	if (dynamic_scaling)
+		go_hispeed_load = new_go_hispeed_load;
 }
 
 void scale_timer_rate(unsigned int new_timer_rate)
 {
-	timer_rate = new_timer_rate * 1000;
+	if (dynamic_scaling)
+		timer_rate = new_timer_rate * 1000;
 }
 
 void scale_min_sample_time(unsigned int new_min_sample_time)
 {
-	min_sample_time = new_min_sample_time * 1000;
+	if (dynamic_scaling)
+		min_sample_time = new_min_sample_time * 1000;
+}
+
+unsigned int get_input_boost_freq()
+{
+	return input_boost_freq;
+}
+
+unsigned int get_min_sample_time()
+{
+	return min_sample_time;
+}
+
+bool get_dynamic_scaling()
+{
+	return dynamic_scaling;
 }
 
 static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
@@ -873,6 +978,14 @@ static int cpufreq_governor_interactive(struct cpufreq_policy *policy,
 
 		if (!hispeed_freq)
 			hispeed_freq = policy->max;
+			input_boost_freq = hispeed_freq;
+		}
+
+		if (!io_is_busy)
+			io_is_busy = 1;
+
+		if (!dynamic_scaling)
+			dynamic_scaling = 1;
 
 		/*
 		 * Do not register the idle hook and create sysfs
