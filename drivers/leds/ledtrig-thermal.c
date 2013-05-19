@@ -26,6 +26,7 @@ static void check_temp(struct work_struct *work);
 static DECLARE_DELAYED_WORK(check_temp_work, check_temp);
 static unsigned delay;
 static int brightness;
+static int prev_brightness;
 static int active;
 
 static void thermal_trig_activate(struct led_classdev *led_cdev)
@@ -93,6 +94,10 @@ static void check_temp(struct work_struct *work)
 	pr_debug("%s: temp: %lu, br: %u, led_br: %u\n", __func__,
 					temp, br, brightness);
 
+	if (brightness == prev_brightness)
+		goto reschedule;
+
+	prev_brightness = brightness;
 	led_trigger_event(&thermal_led_trigger, brightness);
 
 reschedule:
@@ -138,6 +143,7 @@ static int __init thermal_trig_init(void)
 	int ret;
 	delay = 2 * HZ;
 	brightness = 0;
+	prev_brightness = 0;
 	active = 0;
 
 	ret = led_trigger_register(&thermal_led_trigger);
