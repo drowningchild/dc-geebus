@@ -2141,7 +2141,7 @@ static void touch_input_report(struct lge_touch_data *ts)
 
 #define TOUCH_BOOST_FREQ get_input_boost_freq()
 #define SWIPE_BOOST_FREQ 702000
-#define BOOSTED_TIME 200
+#define BOOSTED_TIME_MS 500000
 
 static struct cpufreq_policy *policy;
 
@@ -2224,19 +2224,20 @@ static void touch_work_func_c(struct work_struct *work)
 				__cpufreq_driver_target(policy, SWIPE_BOOST_FREQ, 
 					CPUFREQ_RELATION_H);
 
-			is_touching(true, now);
-			scale_min_sample_time(BOOSTED_TIME);
+			is_touching(true, now, false);
 		}
 
 		else if (policy->cur < TOUCH_BOOST_FREQ && num_online_cpus() < 2)
 		{
 			__cpufreq_driver_target(policy, TOUCH_BOOST_FREQ, 
 				CPUFREQ_RELATION_H);
+
+			is_touching(true, now, true);
 		}
 
 		if (get_min_sample_time() < BOOSTED_TIME_MS && 
 			likely(get_dynamic_scaling()))
-				scale_min_sample_time(BOOSTED_TIME);
+				scale_min_sample_time(BOOSTED_TIME_MS);
 	} 
 		flag = true;
 	}
