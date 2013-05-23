@@ -245,8 +245,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer
+HOSTCXXFLAGS = -O3
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -347,17 +347,16 @@ CHECK		= sparse
 
 # Use the wrapper for the compiler.  This wrapper scans for new
 # warnings and causes the build to stop upon encountering them.
-CC		= $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
+CC              = $(srctree)/scripts/gcc-wrapper.py $(REAL_CC)
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
-		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = -fno-pic -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon-vfpv4
+                  -Wbitwise -Wno-return-void $(CF)
+CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  =
-CFLAGS_KERNEL	= -mcpu=cortex-a15 -mtune=cortex-a15 -mfpu=neon-vfpv4
-AFLAGS_KERNEL	=
-CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage
-
+CFLAGS_KERNEL   = -mcpu=cortex-a15 -mfpu=neon -ftree-vectorize
+AFLAGS_KERNEL   = -mcpu=cortex-a15 -mfpu=neon -ftree-vectorize
+CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
 # Needed to be compatible with the O= option
@@ -368,11 +367,24 @@ LINUXINCLUDE    := -I$(srctree)/arch/$(hdr-arch)/include \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
-		   -fno-strict-aliasing -fno-common \
-		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -fno-delete-null-pointer-checks
+KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
+                   -fno-strict-aliasing -fno-common \
+                   -Wno-format-security -funsafe-math-optimizations \
+                   -fno-delete-null-pointer-checks -mno-unaligned-access \
+                   -mcpu=cortex-a15 -mfpu=neon -mvectorize-with-neon-quad \
+                   -fsingle-precision-constant -fpredictive-commoning -fipa-cp-clone \
+                   -fgcse-after-reload -ftree-vectorize -pipe \
+                   -funswitch-loops -fvect-cost-model
+
+ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
+KBUILD_CFLAGS   := -floop-interchange -floop-strip-mine \
+                   -floop-block
+endif
+
+ifdef CONFIG_CC_LINK_TIME_OPTIMIZATION
+KBUILD_CFLAGS   := -flto -fno-toplevel-reorder
+endif
+
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
 KBUILD_AFLAGS   := -D__ASSEMBLY__
