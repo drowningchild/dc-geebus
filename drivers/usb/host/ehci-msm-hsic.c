@@ -107,8 +107,6 @@ struct msm_hsic_hcd *__mehci;
 
 static bool debug_bus_voting_enabled = true;
 
-static unsigned int enable_payload_log = 1;
-module_param(enable_payload_log, uint, S_IRUGO | S_IWUSR);
 static unsigned int enable_dbg_log = 1;
 module_param(enable_dbg_log, uint, S_IRUGO | S_IWUSR);
 /*by default log ep0 and efs sync ep*/
