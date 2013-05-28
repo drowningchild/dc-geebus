@@ -141,6 +141,26 @@ config CPU_FREQ_DEFAULT_GOV_INTELLIDEMAND
 	  Use the CPUFreq governor 'intellidemand' as default. This is
 	  based on Ondemand with browsing detection based on GPU loading
 
+config CPU_FREQ_DEFAULT_GOV_WHEATLEY
+	bool "wheatley"
+	select CPU_FREQ_GOV_WHEATLEY
+	select CPU_FREQ_GOV_PERFORMANCE
+	---help---
+	Use the CPUFreq governor 'wheatley' as default.
+
+config CPU_FREQ_DEFAULT_GOV_DANCEDANCE
+	bool "dancedance"
+	select CPU_FREQ_GOV_DANCEDANCE
+
+config CPU_FREQ_DEFAULT_GOV_SMARTMAX
+	bool "smartmax"
+	select CPU_FREQ_GOV_SMARTMAX
+	help
+	Use the CPUFreq governor 'smartmax' as default
+
+ 
+>>>>>>> e086589...  Source: Updated to 3.4.46
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE

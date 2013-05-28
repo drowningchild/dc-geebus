@@ -946,6 +946,7 @@ static inline int tcp_prequeue(struct sock *sk, struct sk_buff *skb)
 
 	if (sysctl_tcp_low_latency || !tp->ucopy.task)
 		return 0;
+	skb_dst_force(skb);
 
 	skb_dst_force(skb);
 	__skb_queue_tail(&tp->ucopy.prequeue, skb);

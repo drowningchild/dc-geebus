@@ -1674,7 +1674,7 @@ static void rtl8169_rx_vlan_tag(struct RxDesc *desc, struct sk_buff *skb)
 	if (opts2 & RxVlanTag)
 		__vlan_hwaccel_put_tag(skb, swab16(opts2 & 0xffff));
 
-	desc->opts2 = 0;
+
 }
 
 static int rtl8169_gset_tbi(struct net_device *dev, struct ethtool_cmd *cmd)
@@ -5398,7 +5398,7 @@ static int rtl_rx(struct net_device *dev, struct rtl8169_private *tp, u32 budget
 			    (dev->features & NETIF_F_RXALL))
 				goto process_pkt;
 
-			rtl8169_mark_to_asic(desc, rx_buf_sz);
+
 		} else {
 			struct sk_buff *skb;
 			dma_addr_t addr;
@@ -5419,8 +5419,7 @@ process_pkt:
 			if (unlikely(rtl8169_fragmented_frame(status))) {
 				dev->stats.rx_dropped++;
 				dev->stats.rx_length_errors++;
-				rtl8169_mark_to_asic(desc, rx_buf_sz);
-				continue;
+				goto release_descriptor;
 			}
 
 			skb = rtl8169_try_rx_copy(tp->Rx_databuff[entry],
@@ -5428,7 +5427,7 @@ process_pkt:
 			rtl8169_mark_to_asic(desc, rx_buf_sz);
 			if (!skb) {
 				dev->stats.rx_dropped++;
-				continue;
+			goto release_descriptor;
 			}
 
 			rtl8169_rx_csum(skb, status);

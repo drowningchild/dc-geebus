@@ -299,6 +299,7 @@ static struct tc_action_ops act_ipt_ops = {
 	.walk		=	tcf_generic_walker
 };
 
+<<<<<<< HEAD
 static struct tc_action_ops act_xt_ops = {
 	.kind		=	"xt",
 	.hinfo		=	&ipt_hash_info,
@@ -311,12 +312,27 @@ static struct tc_action_ops act_xt_ops = {
 	.lookup		=	tcf_hash_search,
 	.init		=	tcf_ipt_init,
 	.walk		=	tcf_generic_walker
+=======
+  static struct tc_action_ops act_xt_ops = {
+  .kind    =  "xt",
+  .hinfo    =  &ipt_hash_info,
+  .type    =  TCA_ACT_IPT,
+  .capab    =  TCA_CAP_NONE,
+  .owner    =  THIS_MODULE,
+  .act    =  tcf_ipt,
+  .dump    =  tcf_ipt_dump,
+  .cleanup  =  tcf_ipt_cleanup,
+  .lookup    =  tcf_hash_search,
+  .init    =  tcf_ipt_init,
+  .walk    =  tcf_generic_walker
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 };
 
 MODULE_AUTHOR("Jamal Hadi Salim(2002-13)");
 MODULE_DESCRIPTION("Iptables target actions");
 MODULE_LICENSE("GPL");
 MODULE_ALIAS("act_xt");
+<<<<<<< HEAD
 
 static int __init ipt_init_module(void)
 {
@@ -332,11 +348,31 @@ static int __init ipt_init_module(void)
 		return ret1;
 	else
 		return 0;
+=======
+static int __init ipt_init_module(void)
+{
+int ret1, ret2;
+  ret1 = tcf_register_action(&act_xt_ops);
+  if (ret1 < 0)
+    printk("Failed to load xt action\n");
+  ret2 = tcf_register_action(&act_ipt_ops);
+  if (ret2 < 0)
+    printk("Failed to load ipt action\n");
+
+  if (ret1 < 0 && ret2 < 0)
+    return ret1;
+  else
+    return 0; 	
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 }
 
 static void __exit ipt_cleanup_module(void)
 {
+<<<<<<< HEAD
 	tcf_unregister_action(&act_xt_ops);
+=======
+	tcf_unregister_action(&act_xt_ops); 
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 	tcf_unregister_action(&act_ipt_ops);
 }
 

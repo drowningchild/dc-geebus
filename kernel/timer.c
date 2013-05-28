@@ -1687,6 +1687,10 @@ static int init_timers_cpu(int cpu)
 		base = per_cpu(tvec_bases, cpu);
 	}
 
+<<<<<<< HEAD
+=======
+	
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 
 	for (j = 0; j < TVN_SIZE; j++) {
 		INIT_LIST_HEAD(base->tv5.vec + j);

@@ -282,6 +282,7 @@ do_open_fhandle(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_
 
 	open->op_truncate = (open->op_iattr.ia_valid & ATTR_SIZE) &&
 		(open->op_iattr.ia_size == 0);
+<<<<<<< HEAD
 	/*
 	 * In the delegation case, the client is telling us about an
 	 * open that it *already* performed locally, some time ago.  We
@@ -295,6 +296,21 @@ do_open_fhandle(struct svc_rqst *rqstp, struct svc_fh *current_fh, struct nfsd4_
 		accmode = NFSD_MAY_OWNER_OVERRIDE;
 
 	status = do_open_permission(rqstp, current_fh, open, accmode);
+=======
+/*
+   * In the delegation case, the client is telling us about an
+   * open that it *already* performed locally, some time ago.  We
+   * should let it succeed now if possible.
+   *
+   * In the case of a CLAIM_FH open, on the other hand, the client
+   * may be counting on us to enforce permissions (the Linux 4.1
+   * client uses this for normal opens, for example).
+   */
+  if (open->op_claim_type == NFS4_OPEN_CLAIM_DELEG_CUR_FH)
+    accmode = NFSD_MAY_OWNER_OVERRIDE; 
+
+	status = do_open_permission(rqstp, current_fh, open, accmode); 
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 
 	return status;
 }

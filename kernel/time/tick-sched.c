@@ -920,7 +920,11 @@ void tick_cancel_sched_timer(int cpu)
 		hrtimer_cancel(&ts->sched_timer);
 # endif
 
+<<<<<<< HEAD
 	memset(ts, 0, sizeof(*ts));
+=======
+	 memset(ts, 0, sizeof(*ts));
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 }
 #endif
 

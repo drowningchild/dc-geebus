@@ -1981,10 +1981,17 @@ repeat:
 
 		for (i = 0; i < ngroups; group++, i++) {
 			/*
+<<<<<<< HEAD
 			 * Artificially restricted ngroups for non-extent
 			 * files makes group > ngroups possible on first loop.
 			 */
 			if (group >= ngroups)
+=======
+	       * Artificially restricted ngroups for non-extent
+	       * files makes group > ngroups possible on first loop.
+	       */
+	      if (group >= ngroups) 
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 				group = 0;
 
 			/* This now checks without needing the buddy page */

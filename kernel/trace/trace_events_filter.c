@@ -778,10 +778,16 @@ static int filter_set_pred(struct event_filter *filter,
 static void __free_preds(struct event_filter *filter)
 {
 	int i;
+<<<<<<< HEAD
 
 	if (filter->preds) {
 		for (i = 0; i < filter->n_preds; i++)
 			kfree(filter->preds[i].ops);
+=======
+	if (filter->preds) {
+	for (i = 0; i < filter->n_preds; i++)
+        kfree(filter->preds[i].ops); 
+>>>>>>> 11dbb27...  Source: Updated to 3.4.46
 		kfree(filter->preds);
 		filter->preds = NULL;
 	}
