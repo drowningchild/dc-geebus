@@ -499,6 +499,37 @@ static int ulpi_write(struct msm_hsic_hcd *mehci, u32 val, u32 reg)
 	return 0;
 }
 
+#define HSIC_DBG1		0X38
+#define ULPI_MANUAL_ENABLE	BIT(4)
+#define ULPI_LINESTATE_DATA	BIT(5)
+#define ULPI_LINESTATE_STROBE	BIT(6)
+static void ehci_msm_enable_ulpi_control(struct usb_hcd *hcd, u32 linestate)
+{
+	struct msm_hsic_hcd *mehci = hcd_to_hsic(hcd);
+	int val;
+
+	switch (linestate) {
+	case PORT_RESET:
+		val = ulpi_read(mehci, HSIC_DBG1);
+		val |= ULPI_MANUAL_ENABLE;
+		val &= ~(ULPI_LINESTATE_DATA | ULPI_LINESTATE_STROBE);
+		ulpi_write(mehci, val, HSIC_DBG1);
+		break;
+	default:
+		pr_info("%s: Unknown linestate:%0x\n", __func__, linestate);
+	}
+}
+
+static void ehci_msm_disable_ulpi_control(struct usb_hcd *hcd)
+{
+	struct msm_hsic_hcd *mehci = hcd_to_hsic(hcd);
+	int val;
+
+	val = ulpi_read(mehci, HSIC_DBG1);
+	val &= ~ULPI_MANUAL_ENABLE;
+	ulpi_write(mehci, val, HSIC_DBG1);
+}
+
 static int msm_hsic_config_gpios(struct msm_hsic_hcd *mehci, int gpio_en)
 {
 	int rc = 0;
@@ -689,9 +720,6 @@ static int msm_hsic_start(struct msm_hsic_hcd *mehci)
 
 	return 0;
 }
-
-#define PHY_SUSPEND_TIMEOUT_USEC	(120 * 1000)
-#define PHY_RESUME_TIMEOUT_USEC		(100 * 1000)
 
 #ifdef CONFIG_PM_SLEEP
 static int msm_hsic_reset(struct msm_hsic_hcd *mehci)
@@ -918,26 +946,6 @@ static void ehci_hsic_bus_vote_w(struct work_struct *w)
 				__func__, ret);
 }
 
-static int msm_hsic_reset_done(struct usb_hcd *hcd)
-{
-	struct ehci_hcd *ehci = hcd_to_ehci(hcd);
-	u32 __iomem *status_reg = &ehci->regs->port_status[0];
-	int ret;
-
-	ehci_writel(ehci, ehci_readl(ehci, status_reg) & ~(PORT_RWC_BITS |
-					PORT_RESET), status_reg);
-
-	ret = handshake(ehci, status_reg, PORT_RESET, 0, 1 * 1000);
-
-	if (ret)
-		pr_err("reset handshake failed in %s\n", __func__);
-	else
-		ehci_writel(ehci, ehci_readl(ehci, &ehci->regs->command) |
-				CMD_RUN, &ehci->regs->command);
-
-	return ret;
-}
-
 #define STS_GPTIMER0_INTERRUPT	BIT(24)
 static irqreturn_t msm_hsic_irq(struct usb_hcd *hcd)
 {
@@ -965,28 +973,16 @@ static irqreturn_t msm_hsic_irq(struct usb_hcd *hcd)
 	if (status & STS_GPTIMER0_INTERRUPT) {
 		int timeleft;
 
-		dbg_log_event(NULL, "FPR: gpt0_isr", mehci->bus_reset);
+		dbg_log_event(NULL, "FPR: gpt0_isr", 0);
 
 		timeleft = GPT_CNT(ehci_readl(ehci,
 						 &mehci->timer->gptimer1_ctrl));
 		if (timeleft) {
-			if (mehci->bus_reset) {
-				ret = msm_hsic_reset_done(hcd);
-				if (ret) {
-					mehci->reset_again = 1;
-					dbg_log_event(NULL, "RESET: fail", 0);
-				}
-			} else {
-				ehci_writel(ehci, ehci_readl(ehci,
-					&ehci->regs->command) | CMD_RUN,
-					&ehci->regs->command);
-			}
-		} else {
-			if (mehci->bus_reset)
-				mehci->reset_again = 1;
-			else
-				mehci->resume_again = 1;
-		}
+			ehci_writel(ehci, ehci_readl(ehci,
+				&ehci->regs->command) | CMD_RUN,
+				&ehci->regs->command);
+		} else
+			mehci->resume_again = 1;
 
 		dbg_log_event(NULL, "FPR: timeleft", timeleft);
 

@@ -90,6 +90,11 @@
 
 #define SIR_MDIE_SIZE               3
 
+/* Max number of channels are 165, but to access 165th element of array,
+ *array of 166 is required.
+ */
+#define SIR_MAX_24G_5G_CHANNEL_RANGE      166
+
 
 
 #define SIR_NUM_11B_RATES 4   //1,2,5.5,11
@@ -718,6 +723,12 @@ typedef struct sSirChannelList
     tANI_U8          numChannels;
     tANI_U8          channelNumber[1];
 } tSirChannelList, *tpSirChannelList;
+
+typedef struct sSirDFSChannelList
+{
+    tANI_U32         timeStamp[SIR_MAX_24G_5G_CHANNEL_RANGE];
+
+} tSirDFSChannelList, *tpSirDFSChannelList;
 
 #ifdef FEATURE_WLAN_CCX
 typedef struct sTspecInfo {
@@ -3440,7 +3451,7 @@ typedef struct
   tANI_U32    encryption; 
   tANI_U32    bcastNetwType; 
   tANI_U8     ucChannelCount;
-  tANI_U8     aChannels[SIR_PNO_MAX_NETW_CHANNELS]; 
+  tANI_U8     aChannels[SIR_PNO_MAX_NETW_CHANNELS_EX];
   tANI_U8     rssiThreshold;
 } tSirNetworkType; 
 
