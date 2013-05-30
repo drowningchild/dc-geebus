@@ -4133,11 +4133,11 @@ unsigned long __weak arch_max_cpu_capacity(int cpu)
 	return SCHED_POWER_SCALE;
 }
 
-int __weak arch_get_cpu_capacity(int cpu)
+unsigned long arch_get_cpu_capacity(int cpu)
 {
 	return SCHED_POWER_SCALE;
 }
-int __weak arch_get_max_cpu_capacity(int cpu)
+unsigned long arch_get_max_cpu_capacity(int cpu)
 {
 	return SCHED_POWER_SCALE;
 }

@@ -2143,7 +2143,9 @@ static void touch_input_report(struct lge_touch_data *ts)
 #define SWIPE_BOOST_FREQ 702000
 #define BOOSTED_TIME_MS 500000
 
-static struct cpufreq_policy *policy;
+#ifdef MAKO_GENERIC_HOTPLUG
+	static struct cpufreq_policy *policy;
+#endif
 
 /*
  * Touch work function
@@ -2154,16 +2156,17 @@ static void touch_work_func_c(struct work_struct *work)
 			container_of(work, struct lge_touch_data, work);
 
 	u8 report_enable = 0;
-	int int_pin = 0;
 	int next_work = 0;
 	int ret = 0;
-	/*static unsigned int x = 0;*/
-	/*static unsigned int y = 0;*/
-	/*static bool flag = false;*/
-	/*static bool xy_lock = false;*/
-	/*unsigned long now = ktime_to_ms(ktime_get());*/
-	/*policy = cpufreq_cpu_get(0);*/
-
+	#ifdef MAKO_GENERIC_HOTPLUG
+		int int_pin = 0;
+		static unsigned int x = 0;
+		static unsigned int y = 0;
+		static bool flag = false;
+		static bool xy_lock = false;
+		unsigned long now = ktime_to_ms(ktime_get());
+		policy = cpufreq_cpu_get(0);
+	#endif
 	atomic_dec(&ts->next_work);
 	ts->ts_data.total_num = 0;
 
@@ -2212,7 +2215,7 @@ static void touch_work_func_c(struct work_struct *work)
 	
 	touch_input_report(ts);
 	
-	/*
+	#ifdef MAKO_GENERIC_HOTPLUG
 	if (ts->ts_data.curr_data[0].status == ABS_PRESS) 
 	{
 		if(!xy_lock)
@@ -2253,7 +2256,7 @@ static void touch_work_func_c(struct work_struct *work)
 		flag = false;
 		xy_lock = false;
 	}
-	*/ /* REMOVED CAUSE NOT USED CURRENTLY ( TESTING ) */
+	#endif
 out:
 	if (likely(ts->pdata->role->operation_mode == INTERRUPT_MODE))
 	{

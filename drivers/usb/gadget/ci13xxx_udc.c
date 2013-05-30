@@ -414,7 +414,7 @@ static int hw_ep_flush(int num, int dir)
 {
 	ktime_t start, diff;
 	int n = hw_ep_bit(num, dir);
-	struct ci13xxx_ep *mEp = &_udc->ci13xxx_ep[n];
+	/*struct ci13xxx_ep *mEp = &_udc->ci13xxx_ep[n];*/
 
 	start = ktime_get();
 	do {

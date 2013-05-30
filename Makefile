@@ -374,7 +374,7 @@ KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
                    -mcpu=cortex-a15 -mfpu=neon -mvectorize-with-neon-quad \
                    -fsingle-precision-constant -fpredictive-commoning -fipa-cp-clone \
                    -fgcse-after-reload -ftree-vectorize -pipe \
-                   -funswitch-loops -fvect-cost-model
+                   -funswitch-loops -fvect-cost-model -Wall
 
 ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
 KBUILD_CFLAGS   := -floop-interchange -floop-strip-mine \
