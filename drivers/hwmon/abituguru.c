@@ -1411,6 +1411,7 @@ static int __devinit abituguru_probe(struct platform_device *pdev)
 
 	/* Register sysfs hooks */
 	for (i = 0; i < sysfs_attr_i; i++) {
+<<<<<<< HEAD
 		res = device_create_file(&pdev->dev,
 					 &data->sysfs_attr[i].dev_attr);
 		if (res)
@@ -1422,6 +1423,19 @@ static int __devinit abituguru_probe(struct platform_device *pdev)
 		if (res)
 			goto abituguru_probe_error;
 	}
+=======
+	res = device_create_file(&pdev->dev,
+           &data->sysfs_attr[i].dev_attr);
+       if (res) 
+			goto abituguru_probe_error;
+	}
+       for (i = 0; i < ARRAY_SIZE(abituguru_sysfs_attr); i++) {
+	    res = device_create_file(&pdev->dev,
+            &abituguru_sysfs_attr[i].dev_attr);
+       if (res) 
+			goto abituguru_probe_error;
+  }
+>>>>>>> f1dfddc... Source: Updated to 3.4.47
 
 	data->hwmon_dev = hwmon_device_register(&pdev->dev);
 	if (!IS_ERR(data->hwmon_dev))

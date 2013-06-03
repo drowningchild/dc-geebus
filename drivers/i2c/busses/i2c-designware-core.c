@@ -348,7 +348,11 @@ static void i2c_dw_xfer_init(struct dw_i2c_dev *dev)
 	dw_writel(dev, 1, DW_IC_ENABLE);
 
 	/* Clear and enable interrupts */
+<<<<<<< HEAD
 	i2c_dw_clear_int(dev);
+=======
+	i2c_dw_clear_int(dev); 
+>>>>>>> f1dfddc... Source: Updated to 3.4.47
 	dw_writel(dev, DW_IC_INTR_DEFAULT_MASK, DW_IC_INTR_MASK);
 }
 

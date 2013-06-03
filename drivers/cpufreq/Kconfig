@@ -158,9 +158,6 @@ config CPU_FREQ_DEFAULT_GOV_SMARTMAX
 	help
 	Use the CPUFreq governor 'smartmax' as default
 
- 
->>>>>>> e086589...  Source: Updated to 3.4.46
-
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE

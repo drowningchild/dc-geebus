@@ -249,9 +249,15 @@ err5:
 	tasklet_kill(&mantis->tasklet);
 	dvb_net_release(&mantis->dvbnet);
 	if (mantis->fe) {
+<<<<<<< HEAD
 		dvb_unregister_frontend(mantis->fe);
 		dvb_frontend_detach(mantis->fe);
 	}
+=======
+	dvb_unregister_frontend(mantis->fe);
+	dvb_frontend_detach(mantis->fe);
+  } 
+>>>>>>> f1dfddc... Source: Updated to 3.4.47
 err4:
 	mantis->demux.dmx.remove_frontend(&mantis->demux.dmx, &mantis->fe_mem);
 
