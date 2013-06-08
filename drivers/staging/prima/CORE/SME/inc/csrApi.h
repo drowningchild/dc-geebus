@@ -1019,6 +1019,7 @@ typedef struct tagCsrConfigParam
 
     tANI_U32  nActiveMinChnTimeBtc;     //in units of milliseconds
     tANI_U32  nActiveMaxChnTimeBtc;     //in units of milliseconds
+    tANI_U32  disableAggWithBtc;
 #ifdef WLAN_AP_STA_CONCURRENCY
     tANI_U32  nPassiveMinChnTimeConc;    //in units of milliseconds
     tANI_U32  nPassiveMaxChnTimeConc;    //in units of milliseconds
@@ -1366,6 +1367,13 @@ typedef void * tScanResultHandle;
 
 #define CSR_INVALID_SCANRESULT_HANDLE       (NULL)
 
+#ifdef WLAN_FEATURE_ROAM_SCAN_OFFLOAD
+typedef struct tagCsrHandoffRequest
+{
+    tCsrBssid bssid;
+    tANI_U8 channel;
+}tCsrHandoffRequest;
+#endif
 
 
 ////////////////////////////////////////////Common SCAN starts
