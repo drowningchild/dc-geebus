@@ -1961,9 +1961,7 @@ static unsigned long read_swap_header(struct swap_info_struct *p,
 	 * swap pte.  Then the same is done for a radix_tree entry.
 	 */
 	maxpages = swp_offset(pte_to_swp_entry(
-			swp_entry_to_pte(swp_entry(0, ~0UL))));
-	maxpages = swp_offset(radix_to_swp_entry(
-			swp_to_radix_entry(swp_entry(0, maxpages)))) + 1;
+			swp_entry_to_pte(swp_entry(0, ~0UL)))) + 1;
 
 	if (maxpages > swap_header->info.last_page) {
 		maxpages = swap_header->info.last_page + 1;
