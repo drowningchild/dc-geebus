@@ -41,7 +41,6 @@
 #include <linux/cpu.h>
 #include <linux/notifier.h>
 #include <linux/rculist.h>
-#include <linux/coresight-stm.h>
 
 #include <asm/uaccess.h>
 
@@ -963,8 +962,6 @@ asmlinkage int vprintk(const char *fmt, va_list args)
 		}
 	}
 
-	stm_log(OST_ENTITY_PRINTK, printk_buf, printed_len);
-
 	/*
 	 * Copy the output into log_buf. If the caller didn't provide
 	 * the appropriate log prefix, we insert them here
@@ -1204,13 +1201,13 @@ void resume_console(void)
 	console_unlock();
 }
 
-static void console_flush(struct work_struct *work)
+static void __cpuinit console_flush(struct work_struct *work)
 {
 	console_lock();
 	console_unlock();
 }
 
-static DECLARE_WORK(console_cpu_notify_work, console_flush);
+static __cpuinitdata DECLARE_WORK(console_cpu_notify_work, console_flush);
 
 /**
  * console_cpu_notify - print deferred console messages after CPU hotplug
@@ -1226,7 +1223,7 @@ static DECLARE_WORK(console_cpu_notify_work, console_flush);
  * Special handling must be done for cases invoked from an atomic context,
  * as we can't be taking the console semaphore here.
  */
-static int console_cpu_notify(struct notifier_block *self,
+static int __cpuinit console_cpu_notify(struct notifier_block *self,
 	unsigned long action, void *hcpu)
 {
 	switch (action) {
