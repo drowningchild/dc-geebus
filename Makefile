@@ -192,8 +192,8 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 # Default value for CROSS_COMPILE is not to prefix executables
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 export KBUILD_BUILDHOST := $(SUBARCH)
-ARCH		?= $(SUBARCH)
-CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+ARCH		?= arm
+CROSS_COMPILE	?= /home/drowningchild/prebuilts_gcc_linux-x86_arm_arm-eabi-4.7/bin/arm-eabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -245,8 +245,8 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer
-HOSTCXXFLAGS = -O3
+HOSTCFLAGS   = -Wmissing-prototypes -Wstrict-prototypes -Ofast -fomit-frame-pointer
+HOSTCXXFLAGS = -Ofast
 
 # Decide whether to build built-in, modular, or both.
 # Normally, just do built-in.
@@ -354,8 +354,8 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
-CFLAGS_KERNEL   = -mcpu=cortex-a15 -mfpu=neon -ftree-vectorize -mvectorize-with-neon-quad
-AFLAGS_KERNEL   = -mcpu=cortex-a15 -mfpu=neon -ftree-vectorize
+CFLAGS_KERNEL   = -mcpu=cortex-a15 -mfpu=neon-vfpv4 -ftree-vectorize -mvectorize-with-neon-quad
+AFLAGS_KERNEL   = -mcpu=cortex-a15 -mfpu=neon-vfpv4 -ftree-vectorize
 CFLAGS_GCOV     = -fprofile-arcs -ftest-coverage -mvectorize-with-neon-quad
 
 # Use LINUXINCLUDE when you must reference the include/ directory.
@@ -369,12 +369,12 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 
 KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
                    -fno-strict-aliasing -fno-common \
-                   -Wno-format-security -funsafe-math-optimizations \
+                   -Wno-format-security -ffast-math \
                    -fno-delete-null-pointer-checks -mno-unaligned-access \
-                   -mcpu=cortex-a15 -mfpu=neon -mvectorize-with-neon-quad \
+                   -mcpu=cortex-a15 -mfpu=neon-vfpv4 -mvectorize-with-neon-quad \
                    -fsingle-precision-constant -fpredictive-commoning -fipa-cp-clone \
                    -fgcse-after-reload -ftree-vectorize -pipe \
-                   -funswitch-loops -fvect-cost-model -Wall
+                   -funswitch-loops -fvect-cost-model -Wno-unused-variable
 
 ifdef CONFIG_CC_GRAPHITE_OPTIMIZATION
 KBUILD_CFLAGS   := -floop-interchange -floop-strip-mine \
@@ -577,7 +577,7 @@ all: vmlinux
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -Ofast
 endif
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
