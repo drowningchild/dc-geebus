@@ -2769,11 +2769,7 @@ static int wm8994_aif3_hw_params(struct snd_pcm_substream *substream,
 		default:
 			return 0;
 		}
-<<<<<<< HEAD
-		break;
-=======
 	break
->>>>>>> 11dbb27...  Source: Updated to 3.4.46
 	default:
 		return 0;
 	}

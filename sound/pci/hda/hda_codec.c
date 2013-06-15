@@ -618,11 +618,7 @@ int snd_hda_queue_unsol_event(struct hda_bus *bus, u32 res, u32 res_ex)
 	unsigned int wp;
 
 	if (!bus || !bus->workq)
-<<<<<<< HEAD
-		return 0;
-=======
     	return 0; 
->>>>>>> 11dbb27...  Source: Updated to 3.4.46
 
 	trace_hda_unsol_event(bus, res, res_ex);
 	unsol = bus->unsol;
