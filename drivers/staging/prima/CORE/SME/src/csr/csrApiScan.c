@@ -1617,7 +1617,7 @@ eHalStatus csrScanHandleSearchForSSID(tpAniSirGlobal pMac, tSmeCmd *pCommand)
             //notify LFR state m/c
             if(eHAL_STATUS_SUCCESS != csrNeighborRoamSssidScanDone(pMac, eHAL_STATUS_SUCCESS))
             {
-                csrNeighborRoamStartLfrScan(pMac);
+                csrNeighborRoamRestartLfrScan(pMac);
             }
             status = eHAL_STATUS_SUCCESS;
             break;
@@ -1702,7 +1702,7 @@ eHalStatus csrScanHandleSearchForSSIDFailure(tpAniSirGlobal pMac, tSmeCmd *pComm
         //notify LFR state m/c
         if(eHAL_STATUS_SUCCESS != csrNeighborRoamSssidScanDone(pMac, eHAL_STATUS_FAILURE))
         {
-            csrNeighborRoamStartLfrScan(pMac);
+            csrNeighborRoamRestartLfrScan(pMac);
         }
         return eHAL_STATUS_SUCCESS;
     }

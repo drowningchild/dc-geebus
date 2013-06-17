@@ -271,14 +271,12 @@ VOS_STATUS csrNeighborRoamChannelsFilterByCurrentBand(
 #define REASON_NPROBES_CHANGED                      13
 #define REASON_HOME_AWAY_TIME_CHANGED               14
 #define REASON_OS_REQUESTED_ROAMING_NOW             15
-#define REASON_SCAN_CH_TIME_CHANGED                 16
-#define REASON_SCAN_HOME_TIME_CHANGED               17
 eHalStatus csrRoamOffloadScan(tpAniSirGlobal pMac, tANI_U8 command, tANI_U8 reason);
 eHalStatus csrNeighborRoamCandidateFoundIndHdlr(tpAniSirGlobal pMac, void* pMsg);
 eHalStatus csrNeighborRoamHandoffReqHdlr(tpAniSirGlobal pMac, void* pMsg);
 eHalStatus csrNeighborRoamProceedWithHandoffReq(tpAniSirGlobal pMac);
 eHalStatus csrNeighborRoamSssidScanDone(tpAniSirGlobal pMac, eHalStatus status);
-eHalStatus csrNeighborRoamStartLfrScan(tpAniSirGlobal pMac);
+eHalStatus csrNeighborRoamRestartLfrScan(tpAniSirGlobal pMac);
 #endif
 
 
