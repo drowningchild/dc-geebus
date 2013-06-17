@@ -927,7 +927,9 @@ WDI_FillTxBd
        // if this is a Virtual Station or statype is TDLS and trig enabled mask
        // set then change the DPU Routing Flag so
        // that the frame will be routed to Firmware for queuing & transmit
-       if (IS_VSTA_IDX(ucStaId) || (ucTxFlag & WDI_TRIGGER_ENABLED_AC_MASK))
+       if (IS_VSTA_IDX(ucStaId) ||
+                 ((ucSTAType == WDI_STA_ENTRY_TDLS_PEER ) &&
+                  (ucTxFlag & WDI_TRIGGER_ENABLED_AC_MASK)))
        {
            pBd->dpuRF = BMUWQ_FW_DPU_TX;
        }
