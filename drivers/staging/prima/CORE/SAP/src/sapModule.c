@@ -1012,7 +1012,7 @@ WLANSAP_ModifyACL
             {
                 //error check
                 // if list is already at max, return failure
-                if (pSapCtx->nAcceptMac == MAX_MAC_ADDRESS_ACCEPTED)
+                if (pSapCtx->nAcceptMac == MAX_ACL_MAC_ADDRESS)
                 {
                     VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
                             "White list is already maxed out. Cannot accept %02x:%02x:%02x:%02x:%02x:%02x",
@@ -1075,7 +1075,7 @@ WLANSAP_ModifyACL
             {
                 //error check
                 // if list is already at max, return failure
-                if (pSapCtx->nDenyMac == MAX_MAC_ADDRESS_ACCEPTED)
+                if (pSapCtx->nDenyMac == MAX_ACL_MAC_ADDRESS)
                 {
                     VOS_TRACE( VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_ERROR,
                             "Black list is already maxed out. Cannot accept %02x:%02x:%02x:%02x:%02x:%02x",
